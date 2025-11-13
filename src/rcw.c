@@ -203,6 +203,19 @@ static GtkWidget *rcw_append_new_page(RemminaConnectionWindow *cnnwin, RemminaCo
 
 static void rcw_ftb_drag_begin(GtkWidget *widget, GdkDragContext *context, gpointer user_data);
 
+/* Forward declarations for internal helpers used by accelerator */
+static RemminaConnectionObject *rcw_get_visible_cnnobj(RemminaConnectionWindow *cnnwin);
+static void rco_disconnect_current_page(RemminaConnectionObject *cnnobj);
+
+/* Accelerator: hardcoded Ctrl+Alt+Shift+Q disconnect */
+static void rcw_on_accel_disconnect(RemminaConnectionWindow *cnnwin)
+{
+    TRACE_CALL(__func__);
+    RemminaConnectionObject *cnnobj = rcw_get_visible_cnnobj(cnnwin);
+    if (!cnnobj) return;
+    rco_disconnect_current_page(cnnobj);
+}
+
 static const GtkTargetEntry dnd_targets_ftb[] =
 {
 	{
@@ -269,17 +282,19 @@ static void rcw_class_init(RemminaConnectionWindowClass *klass)
 					"}\n"
 					"#remmina-tab-page {\n"
 					"}\n"
-					"#ftbbox-upper {\n"
-					"  background-color: white;\n"
-					"  color: black;\n"
+                    "#ftbbox-upper {\n"
+                    "  background-color: black;\n"
+                    "  color: white;\n"
+                    "  border-color: #444444;\n"
 					"  border-style: none solid solid solid;\n"
 					"  border-width: 1px;\n"
 					"  border-radius: 4px;\n"
 					"  padding: 0px;\n"
 					"}\n"
-					"#ftbbox-lower {\n"
-					"  background-color: white;\n"
-					"  color: black;\n"
+                    "#ftbbox-lower {\n"
+                    "  background-color: black;\n"
+                    "  color: white;\n"
+                    "  border-color: #444444;\n"
 					"  border-style: solid solid none solid;\n"
 					"  border-width: 1px;\n"
 					"  border-radius: 4px;\n"
@@ -337,18 +352,20 @@ static void rcw_class_init(RemminaConnectionWindowClass *klass)
 					"}\n"
 					"#remmina-tab-page {\n"
 					"}\n"
-					"#ftbbox-upper {\n"
-					"  border-style: none solid solid solid;\n"
-					"  border-width: 1px;\n"
-					"  border-radius: 4px;\n"
-					"  padding: 0px;\n"
-					"}\n"
-					"#ftbbox-lower {\n"
-					"  border-style: solid solid none solid;\n"
-					"  border-width: 1px;\n"
-					"  border-radius: 4px;\n"
-					"  padding: 0px;\n"
-					"}\n"
+                    "#ftbbox-upper {\n"
+                    "  border-style: none solid solid solid;\n"
+                    "  border-width: 1px;\n"
+                    "  border-radius: 4px;\n"
+                    "  padding: 0px;\n"
+                    "  border-color: #444444;\n"
+                    "}\n"
+                    "#ftbbox-lower {\n"
+                    "  border-style: solid solid none solid;\n"
+                    "  border-width: 1px;\n"
+                    "  border-radius: 4px;\n"
+                    "  padding: 0px;\n"
+                    "  border-color: #444444;\n"
+                    "}\n"
 					"#ftb-handle {\n"
 					"}\n"
 
@@ -3332,6 +3349,18 @@ static void rcw_init(RemminaConnectionWindow *cnnwin)
 	priv->ss_width = 640;
 	priv->ss_height = 480;
 	priv->ss_maximized = FALSE;
+
+	/* Add hardcoded accelerator: Ctrl+Alt+Shift+Q to disconnect */
+	{
+		GtkAccelGroup *accel_group = gtk_accel_group_new();
+		gtk_window_add_accel_group(GTK_WINDOW(cnnwin), accel_group);
+        gtk_accel_group_connect(
+                accel_group,
+                GDK_KEY_q,
+                GDK_CONTROL_MASK | GDK_MOD1_MASK | GDK_SHIFT_MASK,
+                0,
+                g_cclosure_new_swap(G_CALLBACK(rcw_on_accel_disconnect), cnnwin, NULL));
+    }
 
 	remmina_widget_pool_register(GTK_WIDGET(cnnwin));
 }
